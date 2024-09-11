@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class SoundCustomization extends StatefulWidget {
   @override
@@ -14,6 +15,7 @@ class _SoundCustomizationState extends State<SoundCustomization> {
   void initState() {
     super.initState();
     _requestStoragePermission();
+    _loadSelectedSound();
   }
 
   Future<void> _requestStoragePermission() async {
@@ -44,10 +46,27 @@ class _SoundCustomizationState extends State<SoundCustomization> {
     );
 
     if (result != null) {
-      setState(() {
-        selectedSound = result.files.single.name;
-      });
+      String? filePath = result.files.single.path;
+
+      if (filePath != null) {
+        setState(() {
+          selectedSound = filePath;
+        });
+        _saveSelectedSound(filePath); 
+      }
     }
+  }
+
+  Future<void> _loadSelectedSound() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    setState(() {
+      selectedSound = prefs.getString('selectedSound');
+    });
+  }
+
+  Future<void> _saveSelectedSound(String sound) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setString('selectedSound', sound);
   }
 
   @override
@@ -87,16 +106,18 @@ class _SoundCustomizationState extends State<SoundCustomization> {
               title: Text('Sonido 1'),
               onTap: () {
                 setState(() {
-                  selectedSound = 'Sonido 1';
+                  selectedSound = 'default_sound_1';
                 });
+                _saveSelectedSound('default_sound_1');
               },
             ),
             ListTile(
               title: Text('Sonido 2'),
               onTap: () {
                 setState(() {
-                  selectedSound = 'Sonido 2';
+                  selectedSound = 'default_sound_2';
                 });
+                _saveSelectedSound('default_sound_2');
               },
             ),
           ],

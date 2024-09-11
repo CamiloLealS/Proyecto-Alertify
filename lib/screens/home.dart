@@ -19,7 +19,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text("Alertify"), backgroundColor: Color(0xFF007BFF),),
+      appBar: AppBar(title: Text("Alertify", style: TextStyle(fontSize: 30),), centerTitle: true, backgroundColor: Color(0xFF007BFF),),
       body: FlutterMap(
         mapController: _mapController,
         options: MapOptions(

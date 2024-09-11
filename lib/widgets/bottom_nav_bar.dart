@@ -27,8 +27,8 @@ class BottomNavBar extends StatelessWidget {
           label: 'Sonido',
         ),
       ],
-      selectedItemColor: Color(0xFF007BFF), // Azul
-      unselectedItemColor: Colors.grey,
+      selectedItemColor: Color.fromARGB(255, 0, 0, 0), // Azul
+      unselectedItemColor: Color.fromARGB(255, 255, 255, 255),
     );
   }
 }
