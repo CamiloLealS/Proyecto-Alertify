@@ -23,8 +23,8 @@ class BottomNavBar extends StatelessWidget {
           label: 'Home',
         ),
         BottomNavigationBarItem(
-          icon: Icon(Icons.notifications),
-          label: 'Sonido',
+          icon: Icon(Icons.history),
+          label: 'Historial Desastres',
         ),
       ],
       selectedItemColor: Color.fromARGB(255, 0, 0, 0), // Azul

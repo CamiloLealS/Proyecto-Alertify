@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "452675759021",
+    "project_id": "alertduck-4746d",
+    "storage_bucket": "alertduck-4746d.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:452675759021:android:1c52344b14aa3395a70f24",
+        "android_client_info": {
+          "package_name": "cl.usm.alertify"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC-ISBRisCemxQSs3aQlcObnsme1Zt0fqM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

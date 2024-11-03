@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class SoundCustomization extends StatefulWidget {
@@ -14,29 +13,7 @@ class _SoundCustomizationState extends State<SoundCustomization> {
   @override
   void initState() {
     super.initState();
-    _requestStoragePermission();
     _loadSelectedSound();
-  }
-
-  Future<void> _requestStoragePermission() async {
-    PermissionStatus status = await Permission.storage.request();
-
-    if (!status.isGranted) {
-      showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: Text('Permiso necesario'),
-          content: Text(
-              'Es necesario acceder a tu almacenamiento para personalizar los sonidos de alerta.'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: Text('OK'),
-            ),
-          ],
-        ),
-      );
-    }
   }
 
   Future<void> _pickSoundFile() async {

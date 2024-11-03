@@ -1,53 +1,77 @@
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:project_alertify/screens/home.dart';
 import 'package:project_alertify/screens/info_section.dart';
-import 'package:project_alertify/screens/sound_customization.dart';
 import 'package:project_alertify/widgets/bottom_nav_bar.dart';
 import 'package:project_alertify/services/websocket_service.dart';
-import 'package:project_alertify/services/notification_service.dart';
+import 'package:project_alertify/screens/disaster_history.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
+final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp();
 
-  NotificationService notificationService = NotificationService();
-  await notificationService.init();
-  
-  runApp(MyApp(notificationService: notificationService ));
+  const AndroidInitializationSettings initializationSettingsAndroid =
+      AndroidInitializationSettings('@mipmap/ic_launcher'); // Asegúrate de tener un ícono de notificación.
+
+  final InitializationSettings initializationSettings = InitializationSettings(
+    android: initializationSettingsAndroid,
+    // iOS: puedes agregar la configuración para iOS aquí si es necesario
+  );
+
+  await flutterLocalNotificationsPlugin.initialize(initializationSettings);
+
+  runApp(MyApp());
 }
 
-class MyApp extends StatelessWidget {
-  final NotificationService notificationService;
+Future<void> requestPermissions() async {
+  // Revisar el estado de cada permiso y solicitar si no ha sido otorgado
+  if (await Permission.notification.isDenied) {
+    await Permission.notification.request();
+  }
 
-  const MyApp({super.key, required this.notificationService});
+  if (await Permission.location.isDenied) {
+    await Permission.location.request();
+  }
+
+  if (await Permission.storage.isDenied) {
+    await Permission.storage.request();
+  }
+
+  // Aquí puedes manejar el rechazo permanente de permisos si es necesario
+  if (await Permission.notification.isPermanentlyDenied) {
+    openAppSettings(); // Abre la configuración de la app para que el usuario otorgue manualmente los permisos
+  }
+}
+
+
+class MyApp extends StatelessWidget {
+
+  const MyApp({super.key});
 
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
-    return MultiProvider(
-      providers: [
-        Provider<NotificationService>.value(value: notificationService,),
-      ],
-      child: MaterialApp(
-        debugShowCheckedModeBanner: false,
-        title: 'Alertify',
-        theme: ThemeData(
-          colorScheme: ColorScheme.fromSwatch().copyWith(
-            primary: Color(0xFF007BFF),   // Azul
-            secondary: Color(0xFFFF4C4C), // Rojo
-          ),
-          scaffoldBackgroundColor: Colors.white,
-          useMaterial3: true,
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      title: 'Alertify',
+      theme: ThemeData(
+        colorScheme: ColorScheme.fromSwatch().copyWith(
+          primary: Color(0xFF007BFF),   // Azul
+          secondary: Color(0xFFFF4C4C), // Rojo
         ),
-        home: MainScreen(notificationService: notificationService),
+        scaffoldBackgroundColor: Colors.white,
+        useMaterial3: true,
       ),
+      home: MainScreen(),
     );
   }
 }
 class MainScreen extends StatefulWidget {
-  final NotificationService notificationService;
 
-  MainScreen({required this.notificationService});
+  MainScreen();
 
   @override
   _MainScreenState createState() => _MainScreenState();
@@ -55,10 +79,11 @@ class MainScreen extends StatefulWidget {
 
 class _MainScreenState extends State<MainScreen> {
   int _currentIndex = 1;
+
   final List<Widget> _screens = [
     InfoSection(),
     HomeScreen(),
-    SoundCustomization(),
+    DisasterHistory()
   ];
 
   late WebSocketService webSocketService;
@@ -75,9 +100,6 @@ class _MainScreenState extends State<MainScreen> {
   void _onTabSelected(int index) {
     setState(() {
       _currentIndex = index;
-      
-      final notificationService = Provider.of<NotificationService>(context, listen:false);
-      notificationService.showNotification('Hello World!!');
     });
   }
 
