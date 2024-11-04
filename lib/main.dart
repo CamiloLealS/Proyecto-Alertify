@@ -1,4 +1,6 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:project_alertify/screens/home.dart';
@@ -7,11 +9,15 @@ import 'package:project_alertify/widgets/bottom_nav_bar.dart';
 import 'package:project_alertify/services/websocket_service.dart';
 import 'package:project_alertify/screens/disaster_history.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:uuid/uuid.dart';
 
 final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
+
+  await saveUserToken();
 
   const AndroidInitializationSettings initializationSettingsAndroid =
       AndroidInitializationSettings('@mipmap/ic_launcher'); // Asegúrate de tener un ícono de notificación.
@@ -26,14 +32,47 @@ void main() async {
   runApp(MyApp());
 }
 
+Future<void> saveUserToken() async {
+  final FirebaseMessaging messaging = FirebaseMessaging.instance;
+
+  // Obtener el token de FCM
+  String? token = await messaging.getToken();
+
+  if (token != null) {
+    // Obtener o crear un userId único
+    String userId = await getOrCreateUserId();
+
+    // Guardar el token y el userId en Firestore
+    await FirebaseFirestore.instance.collection('usuarios').doc(userId).set({
+      'fcmToken': token,
+      'userId': userId,
+    }, SetOptions(merge: true));
+  }
+}
+
+Future<String> getOrCreateUserId() async {
+  final prefs = await SharedPreferences.getInstance();
+  final existingUserId = prefs.getString('userId');
+
+  if (existingUserId != null) {
+    // Si ya existe un userId almacenado, úsalo
+    return existingUserId;
+  } else {
+    // Si no existe, crea uno nuevo
+    final newUserId = Uuid().v4(); // Genera un UUID único
+    await prefs.setString('userId', newUserId);
+    return newUserId;
+  }
+}
+
 Future<void> requestPermissions() async {
   // Revisar el estado de cada permiso y solicitar si no ha sido otorgado
   if (await Permission.notification.isDenied) {
     await Permission.notification.request();
   }
 
-  if (await Permission.location.isDenied) {
-    await Permission.location.request();
+  if (await Permission.locationAlways.isDenied) {
+    await Permission.locationAlways.request();
   }
 
   if (await Permission.storage.isDenied) {
@@ -45,7 +84,6 @@ Future<void> requestPermissions() async {
     openAppSettings(); // Abre la configuración de la app para que el usuario otorgue manualmente los permisos
   }
 }
-
 
 class MyApp extends StatelessWidget {
 

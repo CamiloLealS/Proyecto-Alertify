@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:project_alertify/main.dart';
 import 'package:project_alertify/screens/sound_customization.dart';
 import 'package:flutter_compass/flutter_compass.dart';
 import 'package:cloud_firestore/cloud_firestore.dart'; // Firebase Firestore
@@ -55,10 +56,21 @@ class _HomeScreenState extends State<HomeScreen> {
         _currentPosition = await Geolocator.getCurrentPosition(
           locationSettings: locationSettings,
         );
+        String userId = await getOrCreateUserId();
+
+        await FirebaseFirestore.instance.collection('usuarios').doc(userId).set({
+          'location':{
+            'latitude': _currentPosition.latitude,
+            'longitude': _currentPosition.longitude
+          }
+        }, SetOptions(merge: true)
+        );
+
         if (mounted) {
           setState(() {
             _initialPosition = LatLng(_currentPosition.latitude, _currentPosition.longitude);
             _mapController.animateCamera(CameraUpdate.newLatLng(_initialPosition));
+            
           });
         }
       } catch (e) {
@@ -84,74 +96,96 @@ class _HomeScreenState extends State<HomeScreen> {
       if (snapshot.docs.isNotEmpty) {
         Set<Marker> newMarkers = {};
         Set<Circle> newCircles = {}; // Set para los nuevos círculos
+        
         for (var doc in snapshot.docs) {
           var data = doc.data();
           var position = LatLng(data['latitude'], data['longitude']);
           var type = data['type'] ?? 'Desastre';
-          bool isActive = data['activo'] ?? false; // Verificar si el estado es activo
+          bool isActive = data['activo'] ?? false;
 
-          if (type == 'earthquake') {
-            if (isActive) {
-              setState(() {
-                newMarkers.add(
-                  Marker(
-                    markerId: MarkerId(doc.id),
-                    position: position,
-                    infoWindow: InfoWindow(
-                      title: 'Terremoto',
-                      snippet: 'Detalles del terremoto',
-                    ),
+          if (isActive) {
+            // Añadir el marcador y círculo solo si está activo
+            if (type == 'earthquake') {
+              newMarkers.add(
+                Marker(
+                  markerId: MarkerId(doc.id),
+                  position: position,
+                  infoWindow: InfoWindow(
+                    title: 'Terremoto',
+                    snippet: 'Detalles del terremoto',
                   ),
-                );
-              });
-
-              // Crear círculo fijo alrededor del terremoto
+                ),
+              );
               newCircles.add(
                 Circle(
                   circleId: CircleId(doc.id),
                   center: position,
-                  radius: 2000, // Establecer el radio a 2000
+                  radius: 2000,
                   strokeColor: Colors.redAccent.withOpacity(0.5),
                   strokeWidth: 2,
                   fillColor: Colors.redAccent.withOpacity(0.2),
                 ),
               );
-
-              evaluateDisaster(data, position);
+            } else if (type == 'incendio') {
               
-            } else {
-              // Si el estado cambia a False, eliminamos el marcador y el círculo
-              setState(() {
-                newMarkers.removeWhere((marker) => marker.markerId.value == doc.id);
-                newCircles.removeWhere((circle) => circle.circleId.value == doc.id);
-              });
-            }
-          } else {
-            // Marcador para otros tipos de desastres
-            newMarkers.add(
-              Marker(
-                markerId: MarkerId(doc.id),
-                position: position,
-                infoWindow: InfoWindow(
-                  title: type,
-                  snippet: 'Detalles del desastre',
+              newMarkers.add(
+                Marker(
+                  markerId: MarkerId(doc.id),
+                  position: position,
+                  infoWindow: InfoWindow(
+                    title: 'Incendio',
+                    snippet: 'Zona afectada por incendio',
+                  ),
+                  icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueOrange),
                 ),
-                icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
-              ),
-            );
+              );
+
+              var radiusKmValue = data['radio_km'];
+
+              // Convertir a double si es int
+              double? radiusKm;
+              if (radiusKmValue is int) {
+                radiusKm = radiusKmValue.toDouble();
+              } else if (radiusKmValue is double) {
+                radiusKm = radiusKmValue;
+              }
+              if (radiusKm != null && radiusKm > 0) {
+                double radius = radiusKm * 1000; // Convertir a metros
+                newCircles.add(
+                  Circle(
+                    circleId: CircleId(doc.id),
+                    center: position,
+                    radius: radius, // Radio dinámico para incendios
+                    strokeColor: Colors.orangeAccent.withOpacity(0.5),
+                    strokeWidth: 2,
+                    fillColor: Colors.orangeAccent.withOpacity(0.2),
+                  ),
+                );
+              }
+            } else {
+              newMarkers.add(
+                Marker(
+                  markerId: MarkerId(doc.id),
+                  position: position,
+                  infoWindow: InfoWindow(
+                    title: type,
+                    snippet: 'Detalles del desastre',
+                  ),
+                  icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
+                ),
+              );
+            }
           }
         }
 
-        // Actualizar el estado de los marcadores y círculos
+        // Actualizar el estado solo una vez después de procesar todos los desastres
         setState(() {
           _disasterMarkers = newMarkers;
-          _disasterCircles = newCircles; // Actualizamos los círculos
+          _disasterCircles = newCircles;
         });
       }
     });
   }
-
-
 
 
   // Función para calcular el ángulo en radianes
@@ -215,7 +249,9 @@ class _HomeScreenState extends State<HomeScreen> {
       'your_channel_name',
       importance: Importance.max,
       priority: Priority.high,
+      ongoing: true,
       playSound: true,
+      styleInformation: BigTextStyleInformation('')
     );
     var platformChannelSpecifics = NotificationDetails(android: androidPlatformChannelSpecifics);
     await notificationService.show(

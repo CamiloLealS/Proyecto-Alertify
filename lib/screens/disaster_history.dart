@@ -39,6 +39,7 @@ class DisasterHistory extends StatelessWidget {
 
           // Filtrar desastres en el rango de fechas
           List<Map<String, dynamic>> filteredDisasters = disasters.where((disaster) {
+            if (disaster['time'] == null) return false;
             Timestamp timestamp = disaster['time'];
             DateTime disasterDate = timestamp.toDate();
             return disasterDate.isAfter(limitDate) && disasterDate.isBefore(now);
@@ -96,9 +97,12 @@ class DisasterHistory extends StatelessWidget {
                 }
                 subtitle = 'Fecha: $formattedDate';
               } else if (disaster['type'] == 'incendio') {
-                displayTitle = 'Incendio en $location';
-                subtitle = 'Estado: ${disaster['status'] ?? 'Desconocido'}';
-                trailing = null;
+                displayTitle = 'Incendio - $location';
+                subtitle = 'Fecha: $formattedDate';
+                trailing = Text('Área: ${disaster['radio_km']} km', style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold
+                ),);
               } else {
                 displayTitle = '${disaster['type']} - $location';
                 subtitle = 'Fecha: $formattedDate';
