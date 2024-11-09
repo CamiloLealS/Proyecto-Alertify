@@ -99,10 +99,6 @@ class DisasterHistory extends StatelessWidget {
               } else if (disaster['type'] == 'incendio') {
                 displayTitle = 'Incendio - $location';
                 subtitle = 'Fecha: $formattedDate';
-                trailing = Text('Área: ${disaster['radio_km']} km', style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold
-                ),);
               } else {
                 displayTitle = '${disaster['type']} - $location';
                 subtitle = 'Fecha: $formattedDate';

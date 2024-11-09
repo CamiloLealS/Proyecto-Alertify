@@ -90,13 +90,13 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
-  // Suscribirse a la colección de desastres en Firebase 
+  // Suscribirse a la colección de desastres en Firebase  
   void _subscribeToDisasters() {
     FirebaseFirestore.instance.collection('alertas').snapshots().listen((snapshot) {
       if (snapshot.docs.isNotEmpty) {
         Set<Marker> newMarkers = {};
         Set<Circle> newCircles = {}; // Set para los nuevos círculos
-        
+
         for (var doc in snapshot.docs) {
           var data = doc.data();
           var position = LatLng(data['latitude'], data['longitude']);
@@ -127,40 +127,47 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               );
             } else if (type == 'incendio') {
-              
+              // Agregar un marcador en el punto inicial del incendio
               newMarkers.add(
                 Marker(
                   markerId: MarkerId(doc.id),
                   position: position,
                   infoWindow: InfoWindow(
                     title: 'Incendio',
-                    snippet: 'Zona afectada por incendio',
+                    snippet: 'Punto inicial del incendio',
                   ),
                   icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueOrange),
                 ),
               );
 
-              var radiusKmValue = data['radio_km'];
+              // Círculo en el punto inicial del incendio con un radio constante
+              newCircles.add(
+                Circle(
+                  circleId: CircleId(doc.id),
+                  center: position,
+                  radius: 200,
+                  strokeColor: Colors.orangeAccent.withOpacity(0.5),
+                  strokeWidth: 2,
+                  fillColor: Colors.orangeAccent.withOpacity(0.2),
+                ),
+              );
 
-              // Convertir a double si es int
-              double? radiusKm;
-              if (radiusKmValue is int) {
-                radiusKm = radiusKmValue.toDouble();
-              } else if (radiusKmValue is double) {
-                radiusKm = radiusKmValue;
-              }
-              if (radiusKm != null && radiusKm > 0) {
-                double radius = radiusKm * 1000; // Convertir a metros
-                newCircles.add(
-                  Circle(
-                    circleId: CircleId(doc.id),
-                    center: position,
-                    radius: radius, // Radio dinámico para incendios
-                    strokeColor: Colors.orangeAccent.withOpacity(0.5),
-                    strokeWidth: 2,
-                    fillColor: Colors.orangeAccent.withOpacity(0.2),
-                  ),
-                );
+              // Dibujar círculos adicionales para los demás puntos en `puntos`
+              var puntos = data['puntos'] as List<dynamic>?;
+              if (puntos != null) {
+                for (var punto in puntos) {
+                  var puntoLatLng = LatLng(punto['latitude'], punto['longitude']);
+                  newCircles.add(
+                    Circle(
+                      circleId: CircleId('${doc.id}_${punto['latitude']}_${punto['longitude']}'),
+                      center: puntoLatLng,
+                      radius: 50, // Misma distancia para todos los puntos
+                      strokeColor: Colors.orangeAccent.withOpacity(0.5),
+                      strokeWidth: 2,
+                      fillColor: Colors.orangeAccent.withOpacity(0.2),
+                    ),
+                  );
+                }
               }
             } else {
               newMarkers.add(
@@ -186,6 +193,7 @@ class _HomeScreenState extends State<HomeScreen> {
       }
     });
   }
+
 
 
   // Función para calcular el ángulo en radianes
