@@ -21,9 +21,9 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  Position _locationController = new Position(); // Paw
+  //Position _locationController = new Position(); // Paw
   LatLng? currentP = null;
-  final Completer<GoogleMapController> _mapController = Completer<GoogleMapController>();
+  //final Completer<GoogleMapController> _mapController = Completer<GoogleMapController>();
 
   late GoogleMapController _mapController;
   LatLng _initialPosition = LatLng(0, 0); // Ubicación inicial
@@ -41,11 +41,11 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    _getUserLocation(); // Obtener la ubicación del usuario al iniciar 
+    //_getUserLocation(); // Obtener la ubicación del usuario al iniciar 
     _listenToCompass(); // Escuchar los cambios en la orientación
     _subscribeToDisasters(); // Escuchar los cambios de desastres en tiempo real desde Firebase
     //pAW
-    getLocationUpdates().then(
+    _getUserLocation().then(
       (_) => {
       getPolylinePoints().then((coordinates) => {
         generatePolylineFromPoints(coordinates),
@@ -350,7 +350,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<List<LatLng>> getPolylinePoints() async {
     List<LatLng> polylineCoordinates = [];
     PolylinePoints polylinePoints = PolylinePoints();
-    PolylineResult result = await polylinePoints.getRouteBetweenCoordinates(GOOGLE_MAPS_API_KEY, PointLatLng(_currentPosition), PointLatLng(_initialPosition.latitude, _initialPosition.longitude), travelMode: TravelMode.walking,);
+    PolylineResult result = await polylinePoints.getRouteBetweenCoordinates(GOOGLE_MAPS_API_KEY, PointLatLng(_currentPosition.latitude, _currentPosition.longitude), PointLatLng(_initialPosition.latitude, _initialPosition.longitude), travelMode: TravelMode.walking);
     if (result.points.isNotEmpty) {
       result.points.forEach((PointLatLng point) {
         polylineCoordinates.add(LatLng(point.latitude, point.longitude));
@@ -361,7 +361,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return polylineCoordinates;
 
   }
-  Future<void> getLocationUpdates() async {
+/*  Future<void> getLocationUpdates() async {
     bool _serviceEnabled;
     PermissionStatus _permissionGranted;
 
@@ -379,16 +379,14 @@ class _HomeScreenState extends State<HomeScreen> {
         return;
       }
     }
-
-    
-  }
+*/
 
   void generatePolylineFromPoints(List<LatLng> polylineCoordinates) async {
     PolylineId id = PolylineId("poly");
     Polyline polyline = Polyline(polylineId: id, color: Colors.cyan, points: polylineCoordinates, width: 8);
     setState(() {
       polylines[id] = polyline;
-    })
+    });
   }
 
 }
