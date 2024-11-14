@@ -1,8 +1,10 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:flutter_polyline_points/flutter_polyline_points.dart'; //Paw
 import 'package:geolocator/geolocator.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:project_alertify/consts.dart';
 import 'package:project_alertify/main.dart';
 import 'package:project_alertify/screens/sound_customization.dart';
 import 'package:flutter_compass/flutter_compass.dart';
@@ -19,6 +21,10 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  Position _locationController = new Position(); // Paw
+  LatLng? currentP = null;
+  final Completer<GoogleMapController> _mapController = Completer<GoogleMapController>();
+
   late GoogleMapController _mapController;
   LatLng _initialPosition = LatLng(0, 0); // Ubicación inicial
   late Position _currentPosition;
@@ -30,12 +36,22 @@ class _HomeScreenState extends State<HomeScreen> {
   double _userAltitude = 0.0; // Altitud del usuario
   FlutterLocalNotificationsPlugin notificationService = FlutterLocalNotificationsPlugin(); // Inicializar el servicio de notificaciones
 
+  Map<PolylineId, Polyline> polylines = {};
+
   @override
   void initState() {
     super.initState();
-    _getUserLocation(); // Obtener la ubicación del usuario al iniciar
+    _getUserLocation(); // Obtener la ubicación del usuario al iniciar 
     _listenToCompass(); // Escuchar los cambios en la orientación
     _subscribeToDisasters(); // Escuchar los cambios de desastres en tiempo real desde Firebase
+    //pAW
+    getLocationUpdates().then(
+      (_) => {
+      getPolylinePoints().then((coordinates) => {
+        generatePolylineFromPoints(coordinates),
+      }), 
+    },
+    );
   }
 
   @override
@@ -326,7 +342,53 @@ class _HomeScreenState extends State<HomeScreen> {
         circles: _disasterCircles,
         myLocationButtonEnabled: true,
         myLocationEnabled: true,
+        polylines: Set<Polyline>.of(polylines.values),
       ),
     );
   }
+  //Paw
+  Future<List<LatLng>> getPolylinePoints() async {
+    List<LatLng> polylineCoordinates = [];
+    PolylinePoints polylinePoints = PolylinePoints();
+    PolylineResult result = await polylinePoints.getRouteBetweenCoordinates(GOOGLE_MAPS_API_KEY, PointLatLng(_currentPosition), PointLatLng(_initialPosition.latitude, _initialPosition.longitude), travelMode: TravelMode.walking,);
+    if (result.points.isNotEmpty) {
+      result.points.forEach((PointLatLng point) {
+        polylineCoordinates.add(LatLng(point.latitude, point.longitude));
+      }); 
+    } else{
+      print(result.errorMessage);
+    }
+    return polylineCoordinates;
+
+  }
+  Future<void> getLocationUpdates() async {
+    bool _serviceEnabled;
+    PermissionStatus _permissionGranted;
+
+    _serviceEnabled =await _locationController._serviceEnabled();
+    if (_serviceEnabled) {
+      _serviceEnabled =await _locationController.requestService();
+    } else {
+      return;
+    }
+
+    _permissionGranted =await _locationController.hasPermission();
+    if (_permissionGranted == PermissionStatus.denied) {
+      _permissionGranted = await _locationController.requestPermission();
+      if (_permissionGranted == PermissionStatus.granted) {
+        return;
+      }
+    }
+
+    
+  }
+
+  void generatePolylineFromPoints(List<LatLng> polylineCoordinates) async {
+    PolylineId id = PolylineId("poly");
+    Polyline polyline = Polyline(polylineId: id, color: Colors.cyan, points: polylineCoordinates, width: 8);
+    setState(() {
+      polylines[id] = polyline;
+    })
+  }
+
 }
