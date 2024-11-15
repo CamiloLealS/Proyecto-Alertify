@@ -169,11 +169,6 @@ class _HomeScreenState extends State<HomeScreen> {
             strokeWidth: 2,
             fillColor: Colors.green.withOpacity(0.2),
           ),
-          Polygon(polygonId: PolygonId('zona_segura_2'),
-            points: casa,
-            strokeColor: Colors.green,
-            strokeWidth: 2,
-            fillColor: Colors.green.withOpacity(0.2))
         };
       });
     } else if (tipoDesastre == 'earthquake'){

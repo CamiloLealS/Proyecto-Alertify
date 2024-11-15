@@ -107,7 +107,7 @@ void _showInAppDialog(RemoteMessage message) async {
 
   // Crea un reproductor de audio y reproduce el sonido personalizado
   final player = AudioPlayer();
-  if (userSound != null){
+  if (userSound != null) {
     await player.play(DeviceFileSource(userSound));  // Ruta del archivo de sonido
   }
 
@@ -115,14 +115,51 @@ void _showInAppDialog(RemoteMessage message) async {
     showDialog(
       context: navigatorKey.currentContext!,
       builder: (context) => AlertDialog(
-        title: Text(message.notification?.title ?? 'Alerta'),
-        content: Text(message.notification?.body ?? 'Desastre cerca de tu posición'),
+        backgroundColor: Colors.deepPurple[700], // Fondo color llamativo
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20.0), // Bordes redondeados
+        ),
+        title: Row(
+          children: [
+            Icon(Icons.warning_amber_rounded, color: Colors.yellow, size: 30), // Icono llamativo
+            SizedBox(width: 10),
+            Text(
+              message.notification?.title ?? 'Alerta',
+              style: TextStyle(
+                color: Colors.white, 
+                fontWeight: FontWeight.bold,
+                fontSize: 24,
+              ),
+            ),
+          ],
+        ),
+        content: Text(
+          message.notification?.body ?? 'Desastre cerca de tu posición',
+          style: TextStyle(
+            color: Colors.white70,
+            fontSize: 18,
+          ),
+        ),
         actions: [
           TextButton(
             onPressed: () {
               Navigator.of(context).pop();
             },
-            child: Text("OK"),
+            child: Container(
+              padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              decoration: BoxDecoration(
+                color: Colors.orangeAccent,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Text(
+                "OK",
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 18,
+                ),
+              ),
+            ),
           ),
         ],
       ),
