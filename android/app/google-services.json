@@ -2,7 +2,7 @@
   "project_info": {
     "project_number": "452675759021",
     "project_id": "alertduck-4746d",
-    "storage_bucket": "alertduck-4746d.appspot.com"
+    "storage_bucket": "alertduck-4746d.firebasestorage.app"
   },
   "client": [
     {

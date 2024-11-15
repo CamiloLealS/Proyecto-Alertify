@@ -65,7 +65,6 @@ class DisasterHistory extends StatelessWidget {
               }
 
               String title = disaster['title'];
-              String location = title.contains('of') ? title.split('of')[1].trim() : title;
 
               Timestamp timestamp = disaster['time'];
               DateTime dateTime = timestamp.toDate();
@@ -77,7 +76,7 @@ class DisasterHistory extends StatelessWidget {
               Color tileColor = Colors.white;
 
               if (disaster['type'] == 'earthquake') {
-                displayTitle = 'Terremoto - $location';
+                displayTitle = 'Terremoto - $title';
                 if (disaster.containsKey('magnitude')) {
                   double magnitude = disaster['magnitude'] is double
                       ? disaster['magnitude']
@@ -97,10 +96,10 @@ class DisasterHistory extends StatelessWidget {
                 }
                 subtitle = 'Fecha: $formattedDate';
               } else if (disaster['type'] == 'incendio') {
-                displayTitle = 'Incendio - $location';
+                displayTitle = 'Incendio - $title';
                 subtitle = 'Fecha: $formattedDate';
               } else {
-                displayTitle = '${disaster['type']} - $location';
+                displayTitle = '${disaster['type']} - $title';
                 subtitle = 'Fecha: $formattedDate';
               }
 
