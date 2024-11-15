@@ -27,7 +27,10 @@ void main() async {
     print('se inicio notificaciones');
   } catch (e) {
     print("Error en setupNotification: $e");
+
   }
+
+  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
 
   runApp(MyApp());
 }
@@ -41,7 +44,6 @@ Future<void> setupNotification() async {
     'Alertas de Desastre',
     importance: Importance.max,
     enableVibration: true,
-    sound: RawResourceAndroidNotificationSound()
   );
 
   await flutterLocalNotificationsPlugin
@@ -49,6 +51,27 @@ Future<void> setupNotification() async {
       ?.createNotificationChannel(androidChannel);
 }
 
+Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  await Firebase.initializeApp();
+  final prefs = await SharedPreferences.getInstance();
+  String? userSound = prefs.getString('custom_sound') ?? 'default_sound';
+
+  flutterLocalNotificationsPlugin.show(
+    message.notification.hashCode,
+    message.notification?.title,
+    message.notification?.body,
+    NotificationDetails(
+      android: AndroidNotificationDetails(
+        'disaster_alerts',
+        'Alertas de Desastre',
+        channelDescription: 'Notificaciones urgentes sobre desastres naturales',
+        sound: RawResourceAndroidNotificationSound(userSound),
+        importance: Importance.high,
+        priority: Priority.high,
+      ),
+    ),
+  );
+}
 
 
 Future<void> saveUserToken() async {
