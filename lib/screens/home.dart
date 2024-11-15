@@ -397,7 +397,9 @@ if (result.points.isNotEmpty) {
   void setPolylines() async {
     PolylineResult result = await polylinePoints.getRouteBetweenCoordinates(
       googleApiKey: GOOGLE_MAPS_API_KEY, 
-      LatLng(punto['latitude'], punto['longitude']),
+      PointLatLng(
+        _currentPosition.latitude, 
+        _currentPosition.longitude),
       PointLatLng(
         _currentPosition.latitude, 
         _currentPosition.longitude),
@@ -407,10 +409,11 @@ if (result.points.isNotEmpty) {
         polylineCoordinates.add(LatLng(point.latitude, point.longitude));
       }); 
       setState(() {
+        PolylineId id = PolylineId("poly");
         _polylines.add(
           Polyline(
             width: 10,
-            polylineId: polylineId('polyline'),
+            polylineId: PolylineId('polyline'),
             color: Colors.black45,
             points: polylineCoordinates)
         );
