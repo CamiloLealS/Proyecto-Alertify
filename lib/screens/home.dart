@@ -394,6 +394,7 @@ if (result.points.isNotEmpty) {
     );
   }
   //Paw
+
   void setPolylines() async {
     PolylineResult result = await polylinePoints.getRouteBetweenCoordinates(
       googleApiKey: GOOGLE_MAPS_API_KEY, 
@@ -414,13 +415,12 @@ if (result.points.isNotEmpty) {
           Polyline(
             width: 10,
             polylineId: PolylineId('polyline'),
-            color: Colors.black45,
+            color: Colors.red,
             points: polylineCoordinates)
         );
       });
     } 
-
-
+    
   }
   /*Future<List<LatLng>> getPolylinePoints() async {
     List<LatLng> polylineCoordinates = [];
@@ -461,12 +461,4 @@ if (result.points.isNotEmpty) {
     }
 */
 
-  /*void generatePolylineFromPoints(List<LatLng> polylineCoordinates) async {
-    PolylineId id = PolylineId("poly");
-    Polyline polyline = Polyline(polylineId: id, color: Colors.cyan, points: polylineCoordinates, width: 8);
-    setState(() {
-      polylines[id] = polyline;
-    });
-  }
-*/
 }
