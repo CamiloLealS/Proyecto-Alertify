@@ -1,3 +1,4 @@
+import 'package:audioplayers/audioplayers.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -10,6 +11,7 @@ import 'package:project_alertify/screens/disaster_history.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
+import 'dart:async';
 
 final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
 
@@ -35,9 +37,10 @@ void main() async {
   runApp(MyApp());
 }
 
+final StreamController<Map<String, dynamic>> notificationStreamController = StreamController.broadcast();
+
 Future<void> setupNotification() async {
   final prefs = await SharedPreferences.getInstance();
-  String? customSound = prefs.getString('selectedSound') ?? 'default_sound1';
 
   const androidChannel = AndroidNotificationChannel(
     'disaster_alerts',
@@ -49,28 +52,131 @@ Future<void> setupNotification() async {
   await flutterLocalNotificationsPlugin
       .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
       ?.createNotificationChannel(androidChannel);
+
+  FirebaseMessaging.onMessage.listen((RemoteMessage message) async {
+    String? userSound = prefs.getString('custom_sound');
+
+    notificationStreamController.add({
+      'title': message.notification?.title,
+      'body': message.notification?.body,
+      'data': message.data,
+    });
+
+    if (userSound != null){
+      flutterLocalNotificationsPlugin.show(
+        message.notification.hashCode,
+        message.notification?.title,
+        message.notification?.body,
+        NotificationDetails(
+          android: AndroidNotificationDetails(
+            'disaster_alerts',
+            'Alertas de Desastre',
+            channelDescription: 'Notificaciones urgentes sobre desastres naturales',
+            sound: RawResourceAndroidNotificationSound(userSound),
+            importance: Importance.max,
+            priority: Priority.high,
+          ),
+        ),
+      );
+    } else {
+      flutterLocalNotificationsPlugin.show(
+        message.notification.hashCode,
+        message.notification?.title,
+        message.notification?.body,
+        NotificationDetails(
+          android: AndroidNotificationDetails(
+            'disaster_alerts',
+            'Alertas de Desastre',
+            channelDescription: 'Notificaciones urgentes sobre desastres naturales',
+            importance: Importance.max,
+            priority: Priority.high,
+          ),
+        ),
+      );
+    }
+    
+
+    _showInAppDialog(message);
+  });
 }
+
+void _showInAppDialog(RemoteMessage message) async {
+  final prefs = await SharedPreferences.getInstance();
+  String? userSound = prefs.getString('custom_sound');
+  print(userSound);
+
+  // Crea un reproductor de audio y reproduce el sonido personalizado
+  final player = AudioPlayer();
+  if (userSound != null){
+    await player.play(DeviceFileSource(userSound));  // Ruta del archivo de sonido
+  }
+
+  if (navigatorKey.currentContext != null) {
+    showDialog(
+      context: navigatorKey.currentContext!,
+      builder: (context) => AlertDialog(
+        title: Text(message.notification?.title ?? 'Alerta'),
+        content: Text(message.notification?.body ?? 'Desastre cerca de tu posición'),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+            },
+            child: Text("OK"),
+          ),
+        ],
+      ),
+    );
+  } else {
+    print("El contexto es nulo; no se puede mostrar el diálogo.");
+  }
+}
+
 
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp();
   final prefs = await SharedPreferences.getInstance();
-  String? userSound = prefs.getString('custom_sound') ?? 'default_sound';
+  String? userSound = prefs.getString('custom_sound');
+  print(userSound);
 
-  flutterLocalNotificationsPlugin.show(
-    message.notification.hashCode,
-    message.notification?.title,
-    message.notification?.body,
-    NotificationDetails(
-      android: AndroidNotificationDetails(
-        'disaster_alerts',
-        'Alertas de Desastre',
-        channelDescription: 'Notificaciones urgentes sobre desastres naturales',
-        sound: RawResourceAndroidNotificationSound(userSound),
-        importance: Importance.high,
-        priority: Priority.high,
+  notificationStreamController.add({
+      'title': message.notification?.title,
+      'body': message.notification?.body,
+      'data': message.data,
+    });
+
+  if (userSound != null){
+    flutterLocalNotificationsPlugin.show(
+      message.notification.hashCode,
+      message.notification?.title,
+      message.notification?.body,
+      NotificationDetails(
+        android: AndroidNotificationDetails(
+          'disaster_alerts',
+          'Alertas de Desastre',
+          channelDescription: 'Notificaciones urgentes sobre desastres naturales',
+          sound: RawResourceAndroidNotificationSound(userSound),
+          importance: Importance.max,
+          priority: Priority.high,
+        ),
       ),
-    ),
-  );
+    );
+  } else {
+    flutterLocalNotificationsPlugin.show(
+      message.notification.hashCode,
+      message.notification?.title,
+      message.notification?.body,
+      NotificationDetails(
+        android: AndroidNotificationDetails(
+          'disaster_alerts',
+          'Alertas de Desastre',
+          channelDescription: 'Notificaciones urgentes sobre desastres naturales',
+          importance: Importance.max,
+          priority: Priority.high,
+        ),
+      ),
+    );
+  }
 }
 
 
@@ -121,6 +227,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'Alertify',
+      navigatorKey: navigatorKey,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSwatch().copyWith(
           primary: Color(0xFF007BFF),
@@ -133,6 +240,8 @@ class MyApp extends StatelessWidget {
     );
   }
 }
+
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 class MainScreen extends StatefulWidget {
   @override
