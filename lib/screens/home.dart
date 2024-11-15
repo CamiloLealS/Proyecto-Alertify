@@ -22,9 +22,9 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   //Position _locationController = new Position(); // Paw
-  LatLng? currentP = null;
+  //LatLng? currentP = null;
   //final Completer<GoogleMapController> _mapController = Completer<GoogleMapController>();
-
+   
   late GoogleMapController _mapController;
   LatLng _initialPosition = LatLng(0, 0); // Ubicación inicial
   late Position _currentPosition;
@@ -35,7 +35,11 @@ class _HomeScreenState extends State<HomeScreen> {
 
   double _userAltitude = 0.0; // Altitud del usuario
   FlutterLocalNotificationsPlugin notificationService = FlutterLocalNotificationsPlugin(); // Inicializar el servicio de notificaciones
-
+  //Paw
+  Set<Polyline> _polylines =Set<Polyline>();
+  List<LatLng> polylineCoordinates = [];
+  late PolylinePoints polylinePoints;
+  //PolylinePoints polylinePoints = PolylinePoints();
   Map<PolylineId, Polyline> polylines = {};
 
   @override
@@ -45,13 +49,14 @@ class _HomeScreenState extends State<HomeScreen> {
     _listenToCompass(); // Escuchar los cambios en la orientación
     _subscribeToDisasters(); // Escuchar los cambios de desastres en tiempo real desde Firebase
     //pAW
-    _getUserLocation().then(
+    polylinePoints = PolylinePoints();
+    /*_getUserLocation().then(
       (_) => {
       getPolylinePoints().then((coordinates) => {
         generatePolylineFromPoints(coordinates),
       }), 
     },
-    );
+    );*/
   }
 
   @override
@@ -308,6 +313,47 @@ class _HomeScreenState extends State<HomeScreen> {
     // Implementar lógica para verificar si la app está en primer plano
     return true; // Esto es un placeholder
   }
+//Paw
+/*
+getDirections(List<Marker> markers,newSetState) async {
+    List<LatLng> polylineCoordinates = [];
+    List<PolylineWayPoint> polylineWayPoints = [];
+    for(var i = 0; i<markers.length;i++){
+      polylineWayPoints.add(PolylineWayPoint(location: "${markers[i].position.latitude.toString()},${markers[i].position.longitude.toString()}",stopOver: true));
+    }// result gets little bit late as soon as in video, because package // send http request for getting real road routes    
+    PolylineResult result = await polylinePoints.getRouteBetweenCoordinates( 
+        googleApiKey: "AIzaSyAApzN7gbXptWtWl6WuZxxWovQWuTYVsTY", //GoogleMap ApiKey
+        PointLatLng(markers.first.position.latitude, markers.first.position.longitude), //first added marker
+        PointLatLng(markers.last.position.latitude, markers.last.position.longitude), //last added marker
+        travelMode: TravelMode.driving ); // Sometimes There is no result for example you can put maker to the // ocean, if results not empty adding to polylineCoordinates
+if (result.points.isNotEmpty) {
+      result.points.forEach((PointLatLng point) {
+        polylineCoordinates.add(LatLng(point.latitude, point.longitude));
+      });
+    } else {
+      print(result.errorMessage);
+    }
+
+    newSetState(() {});
+
+    addPolyLine(polylineCoordinates,newSetState);
+
+  }
+
+  addPolyLine(List<LatLng> polylineCoordinates,newSetState) {
+    PolylineId id = PolylineId("poly");
+    Polyline polyline = Polyline(
+      polylineId: id,
+      color: Colors.blue,
+      points: polylineCoordinates,
+      width: 4,
+    );
+    polylines[id] = polyline;
+
+    newSetState(() {});
+  }
+
+*/
 
   @override
   Widget build(BuildContext context) {
@@ -337,20 +383,50 @@ class _HomeScreenState extends State<HomeScreen> {
         initialCameraPosition: CameraPosition(target: _initialPosition, zoom: 12),
         onMapCreated: (GoogleMapController controller) {
           _mapController = controller;
+          setPolylines(); //PAw
         },
         markers: _disasterMarkers,
         circles: _disasterCircles,
         myLocationButtonEnabled: true,
         myLocationEnabled: true,
-        polylines: Set<Polyline>.of(polylines.values),
+        polylines: _polylines,//Set<Polyline>.of(polylines.values),
       ),
     );
   }
   //Paw
-  Future<List<LatLng>> getPolylinePoints() async {
+  void setPolylines() async {
+    PolylineResult result = await polylinePoints.getRouteBetweenCoordinates(
+      googleApiKey: GOOGLE_MAPS_API_KEY, 
+      LatLng(punto['latitude'], punto['longitude']),
+      PointLatLng(
+        _currentPosition.latitude, 
+        _currentPosition.longitude),
+      TravelMode.walking,);
+      if (result.status == 'OK') {
+      result.points.forEach((PointLatLng point) {
+        polylineCoordinates.add(LatLng(point.latitude, point.longitude));
+      }); 
+      setState(() {
+        _polylines.add(
+          Polyline(
+            width: 10,
+            polylineId: polylineId('polyline'),
+            color: Colors.black45,
+            points: polylineCoordinates)
+        );
+      });
+    } 
+
+
+  }
+  /*Future<List<LatLng>> getPolylinePoints() async {
     List<LatLng> polylineCoordinates = [];
     PolylinePoints polylinePoints = PolylinePoints();
-    PolylineResult result = await polylinePoints.getRouteBetweenCoordinates(GOOGLE_MAPS_API_KEY, PointLatLng(_currentPosition.latitude, _currentPosition.longitude), PointLatLng(_initialPosition.latitude, _initialPosition.longitude), travelMode: TravelMode.walking);
+    PolylineResult result = await polylinePoints.getRouteBetweenCoordinates(
+      googleApiKey: GOOGLE_MAPS_API_KEY, 
+      _initialPosition.latitude, _initialPosition.longitude, 
+      _currentPosition.latitude, _currentPosition.longitude, 
+      TravelMode.walking,);
     if (result.points.isNotEmpty) {
       result.points.forEach((PointLatLng point) {
         polylineCoordinates.add(LatLng(point.latitude, point.longitude));
@@ -360,8 +436,9 @@ class _HomeScreenState extends State<HomeScreen> {
     }
     return polylineCoordinates;
 
-  }
-/*  Future<void> getLocationUpdates() async {
+  }*/
+/*
+ Future<void> getLocationUpdates() async {
     bool _serviceEnabled;
     PermissionStatus _permissionGranted;
 
@@ -381,12 +458,12 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 */
 
-  void generatePolylineFromPoints(List<LatLng> polylineCoordinates) async {
+  /*void generatePolylineFromPoints(List<LatLng> polylineCoordinates) async {
     PolylineId id = PolylineId("poly");
     Polyline polyline = Polyline(polylineId: id, color: Colors.cyan, points: polylineCoordinates, width: 8);
     setState(() {
       polylines[id] = polyline;
     });
   }
-
+*/
 }
